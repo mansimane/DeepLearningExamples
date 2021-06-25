@@ -215,7 +215,7 @@ def do_train(
                                         "std TIME_DATALOADER" : statistics.stdev(TIME_DATALOADER) 
                                     }
 
-    print(        "mean TIME_DATA_TO_GPU ",   statistics.mean(TIME_DATA_TO_GPU),
+    print(      "mean TIME_DATA_TO_GPU ",   statistics.mean(TIME_DATA_TO_GPU),
                                         "mean TIME_FORWARD ", statistics.mean(TIME_FORWARD),
                                         "mean TIME_BACKWARD" , statistics.mean(TIME_BACKWARD),
                                         "mean TIME_REDUCE " ,  statistics.mean(TIME_REDUCE),
