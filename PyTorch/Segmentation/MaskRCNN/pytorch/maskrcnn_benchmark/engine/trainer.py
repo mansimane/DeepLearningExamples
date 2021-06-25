@@ -215,6 +215,20 @@ def do_train(
                                         "std TIME_DATALOADER" : statistics.stdev(TIME_DATALOADER) 
                                     }
 
+    print(        "mean TIME_DATA_TO_GPU ",   statistics.mean(TIME_DATA_TO_GPU),
+                                        "mean TIME_FORWARD ", statistics.mean(TIME_FORWARD),
+                                        "mean TIME_BACKWARD" , statistics.mean(TIME_BACKWARD),
+                                        "mean TIME_REDUCE " ,  statistics.mean(TIME_REDUCE),
+                                        "mean TIME_OPTIMIZER " , statistics.mean(TIME_OPTIMIZER),
+                                        "mean TIME_LOGGING" , statistics.mean(TIME_LOGGING),
+                                        "mean TIME_DATALOADER" , statistics.mean(TIME_DATALOADER),
+                                        "std TIME_DATA_TO_GPU" ,   statistics.stdev(TIME_DATA_TO_GPU),
+                                        "std TIME_FORWARD" , statistics.stdev(TIME_FORWARD),
+                                        "std TIME_BACKWARD" , statistics.stdev(TIME_BACKWARD),
+                                        "std TIME_REDUCE" , statistics.stdev(TIME_REDUCE),
+                                        "std TIME_OPTIMIZER" , statistics.stdev(TIME_OPTIMIZER),
+                                        "std TIME_LOGGING" , statistics.stdev(TIME_LOGGING),
+                                        "std TIME_DATALOADER" , statistics.stdev(TIME_DATALOADER))
 
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     sec_per_iteration = total_training_time / max_iter
