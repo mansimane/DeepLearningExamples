@@ -9,7 +9,7 @@ import torch.distributed as dist
 
 from maskrcnn_benchmark.utils.comm import get_world_size
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
-
+import statistics
 try:
     from apex import amp
     use_amp = True
@@ -66,31 +66,60 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
+    TIME_DATA_TO_GPU = [0.0]*max_iter
+    TIME_FORWARD = [0.0]*max_iter
+    TIME_BACKWARD = [0.0]*max_iter
+    TIME_REDUCE = [0.0]*max_iter
+    TIME_OPTIMIZER = [0.0]*max_iter
+    TIME_LOGGING = [0.0]*max_iter
+    TIME_DATALOADER = [0.0]*max_iter
+
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
+        TIME_DATALOADER[iteration] = data_time 
+
         iteration = iteration + 1
         arguments["iteration"] = iteration
-
+        # TIME: DATA TO GPU
+        time_data_start = time.time()
         images = images.to(device)
         targets = [target.to(device) for target in targets]
+        TIME_DATA_TO_GPU[iteration] = time.time() - time_data_start
+
+ 
+        # TIME: FORWARD PASS
+        time_forward_start = time.time()
 
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
+        TIME_FORWARD[iteration] = time.time() - time_forward_start
 
+        # TIME: ALL REDUCE
         # reduce losses over all GPUs for logging purposes
+        time_reduce_start = time.time()
+
         loss_dict_reduced = reduce_loss_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
         meters.update(loss=losses_reduced, **loss_dict_reduced)
 
+        TIME_REDUCE[iteration] = time.time() - time_reduce_start
 
+
+        # TIME: BACKWARD
         # Note: If mixed precision is not used, this ends up doing nothing
         # Otherwise apply loss scaling for mixed-precision recipe
+        time_backward_start = time.time()
+
         if use_amp:
             with amp.scale_loss(losses, optimizer) as scaled_losses:
                 scaled_losses.backward()
         else:
             losses.backward()
+        TIME_BACKWARD[iteration] = time.time() - time_backward_start
+
+        # TIME: OPTIMZER
+        time_optim_start = time.time()
 
         if not cfg.SOLVER.ACCUMULATE_GRAD:
             optimizer.step()
@@ -104,6 +133,11 @@ def do_train(
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
+        TIME_OPTIMIZER[iteration] = time.time() - time_optim_start
+
+
+        # TIME: LOGGING
+        time_logging_start = time.time()
 
         batch_time = time.time() - end
         end = time.time()
@@ -149,16 +183,39 @@ def do_train(
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
 
+        TIME_LOGGING[iteration] = time.time() - time_logging_start
+
+
         # per-epoch work (testing)
         if per_iter_end_callback_fn is not None:
             early_exit = per_iter_end_callback_fn(iteration=iteration)
             if early_exit:
                 break
 
+
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))
+    OPTIMIZER_TIME= MEAN(ARRAY)
+    STD_DEV 
     dllogger.log(step=tuple(), data={"e2e_train_time": total_training_time,
-                                                   "train_perf_fps": max_iter * cfg.SOLVER.IMS_PER_BATCH / total_training_time})
+                                        "train_perf_fps": max_iter * cfg.SOLVER.IMS_PER_BATCH / total_training_time,
+                                        "mean TIME_DATA_TO_GPU" :   statistics.mean(TIME_DATA_TO_GPU),
+                                        "mean TIME_FORWARD" : statistics.mean(TIME_FORWARD), 
+                                        "mean TIME_BACKWARD" : statistics.mean(TIME_BACKWARD), 
+                                        "mean TIME_REDUCE" : statistics.mean(TIME_REDUCE), 
+                                        "mean TIME_OPTIMIZER" : statistics.mean(TIME_OPTIMIZER), 
+                                        "mean TIME_LOGGING" : statistics.mean(TIME_LOGGING), 
+                                        "mean TIME_DATALOADER" : statistics.mean(TIME_DATALOADER), 
+                                        "std TIME_DATA_TO_GPU" :   statistics.stdev(TIME_DATA_TO_GPU),
+                                        "std TIME_FORWARD" : statistics.stdev(TIME_FORWARD), 
+                                        "std TIME_BACKWARD" : statistics.stdev(TIME_BACKWARD), 
+                                        "std TIME_REDUCE" : statistics.stdev(TIME_REDUCE), 
+                                        "std TIME_OPTIMIZER" : statistics.stdev(TIME_OPTIMIZER), 
+                                        "std TIME_LOGGING" : statistics.stdev(TIME_LOGGING), 
+                                        "std TIME_DATALOADER" : statistics.stdev(TIME_DATALOADER) 
+                                    }
+
+
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     sec_per_iteration = total_training_time / max_iter
     samples_per_sec = int(cfg.SOLVER.IMS_PER_BATCH) / sec_per_iteration
