@@ -79,12 +79,13 @@ def do_train(
         TIME_DATALOADER[iteration] = data_time 
 
         iteration = iteration + 1
+        print(" ###### iteration: " , iteration)
         arguments["iteration"] = iteration
         # TIME: DATA TO GPU
         time_data_start = time.time()
         images = images.to(device)
         targets = [target.to(device) for target in targets]
-        TIME_DATA_TO_GPU[iteration] = time.time() - time_data_start
+        TIME_DATA_TO_GPU[iteration-1] = time.time() - time_data_start
 
  
         # TIME: FORWARD PASS
@@ -93,7 +94,7 @@ def do_train(
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
-        TIME_FORWARD[iteration] = time.time() - time_forward_start
+        TIME_FORWARD[iteration-1] = time.time() - time_forward_start
 
         # TIME: ALL REDUCE
         # reduce losses over all GPUs for logging purposes
@@ -103,7 +104,7 @@ def do_train(
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
         meters.update(loss=losses_reduced, **loss_dict_reduced)
 
-        TIME_REDUCE[iteration] = time.time() - time_reduce_start
+        TIME_REDUCE[iteration-1] = time.time() - time_reduce_start
 
 
         # TIME: BACKWARD
@@ -116,7 +117,7 @@ def do_train(
                 scaled_losses.backward()
         else:
             losses.backward()
-        TIME_BACKWARD[iteration] = time.time() - time_backward_start
+        TIME_BACKWARD[iteration-1] = time.time() - time_backward_start
 
         # TIME: OPTIMZER
         time_optim_start = time.time()
@@ -133,7 +134,7 @@ def do_train(
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
-        TIME_OPTIMIZER[iteration] = time.time() - time_optim_start
+        TIME_OPTIMIZER[iteration-1] = time.time() - time_optim_start
 
 
         # TIME: LOGGING
@@ -183,7 +184,7 @@ def do_train(
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
 
-        TIME_LOGGING[iteration] = time.time() - time_logging_start
+        TIME_LOGGING[iteration-1] = time.time() - time_logging_start
 
 
         # per-epoch work (testing)
