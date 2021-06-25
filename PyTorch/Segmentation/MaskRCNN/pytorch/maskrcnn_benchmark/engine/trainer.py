@@ -238,5 +238,32 @@ def do_train(
             total_time_str, sec_per_iteration, samples_per_sec
         )
     )
+    logger.info(" ########   mean TIME_DATA_TO_GPU  : {}, mean TIME_FORWARD : {}, \
+                                        mean TIME_BACKWARD : {} \
+                                        mean TIME_REDUCE  : {} \
+                                        mean TIME_OPTIMIZER : {} \
+                                        mean TIME_LOGGING : {} \
+                                        mean TIME_DATALOADER : {} \
+                                        std TIME_DATA_TO_GPU : {} \
+                                        std TIME_FORWARD : {} \
+                                        std TIME_BACKWARD : {} \
+                                        std TIME_REDUCE : {} \
+                                        std TIME_OPTIMIZER : {} \
+                                        std TIME_LOGGING ,: {} \
+                                        std TIME_DATALOADER ".format(statistics.mean(TIME_DATA_TO_GPU), 
+                                        statistics.mean(TIME_FORWARD),
+                                        statistics.mean(TIME_BACKWARD),
+                                         statistics.mean(TIME_REDUCE),
+                                         statistics.mean(TIME_OPTIMIZER),
+                                         statistics.mean(TIME_LOGGING),
+                                         statistics.mean(TIME_DATALOADER),
+                                         statistics.stdev(TIME_DATA_TO_GPU),
+                                         statistics.stdev(TIME_FORWARD),
+                                         statistics.stdev(TIME_BACKWARD),
+                                         statistics.stdev(TIME_REDUCE),
+                                         statistics.stdev(TIME_OPTIMIZER),
+                                         statistics.stdev(TIME_LOGGING),
+                                         statistics.stdev(TIME_DATALOADER)))
+
     logger.info("Final Loss at iteration {}: {}".format(max_iter, str(meters)))
 
