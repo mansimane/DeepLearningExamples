@@ -85,7 +85,8 @@ def do_train(
         time_data_start = time.time()
         images = images.to(device)
         targets = [target.to(device) for target in targets]
-        TIME_DATA_TO_GPU[iteration-1] = time.time() - time_data_start
+        if iteration < len(TIME_DATA_TO_GPU):
+            TIME_DATA_TO_GPU[iteration-1] = time.time() - time_data_start
 
  
         # TIME: FORWARD PASS
@@ -94,7 +95,8 @@ def do_train(
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
-        TIME_FORWARD[iteration-1] = time.time() - time_forward_start
+        if iteration < len(TIME_DATA_TO_GPU):
+            TIME_FORWARD[iteration-1] = time.time() - time_forward_start
 
         # TIME: ALL REDUCE
         # reduce losses over all GPUs for logging purposes
@@ -103,8 +105,8 @@ def do_train(
         loss_dict_reduced = reduce_loss_dict(loss_dict)
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
         meters.update(loss=losses_reduced, **loss_dict_reduced)
-
-        TIME_REDUCE[iteration-1] = time.time() - time_reduce_start
+        if iteration < len(TIME_DATA_TO_GPU):
+            TIME_REDUCE[iteration-1] = time.time() - time_reduce_start
 
 
         # TIME: BACKWARD
@@ -117,7 +119,8 @@ def do_train(
                 scaled_losses.backward()
         else:
             losses.backward()
-        TIME_BACKWARD[iteration-1] = time.time() - time_backward_start
+        if iteration < len(TIME_DATA_TO_GPU):    
+            TIME_BACKWARD[iteration-1] = time.time() - time_backward_start
 
         # TIME: OPTIMZER
         time_optim_start = time.time()
@@ -134,7 +137,8 @@ def do_train(
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
-        TIME_OPTIMIZER[iteration-1] = time.time() - time_optim_start
+        if iteration < len(TIME_DATA_TO_GPU):
+            TIME_OPTIMIZER[iteration-1] = time.time() - time_optim_start
 
 
         # TIME: LOGGING
@@ -184,7 +188,8 @@ def do_train(
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
 
-        TIME_LOGGING[iteration-1] = time.time() - time_logging_start
+        if iteration < len(TIME_DATA_TO_GPU):
+            TIME_LOGGING[iteration-1] = time.time() - time_logging_start
 
 
         # per-epoch work (testing)
@@ -196,8 +201,6 @@ def do_train(
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))
-    OPTIMIZER_TIME= MEAN(ARRAY)
-    STD_DEV 
     dllogger.log(step=tuple(), data={"e2e_train_time": total_training_time,
                                         "train_perf_fps": max_iter * cfg.SOLVER.IMS_PER_BATCH / total_training_time})
 
