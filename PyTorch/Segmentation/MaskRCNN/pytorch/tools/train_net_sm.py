@@ -55,9 +55,7 @@ def main():
     config_file = os.path.join('/opt/ml/code', args.config_file)
     num_nodes = args.num_nodes
     num_gpus = int(os.environ["SM_NUM_GPUS"])
-    hosts = json.loads(os.environ["SM_HOSTS"])
-    current_host = os.environ["SM_CURRENT_HOST"]
-    rank = hosts.index(current_host)
+    rank = 0
     work_dir = os.environ['SM_OUTPUT_DATA_DIR']
 
     data_dir = "/opt/ml/input/data/train/"
@@ -68,7 +66,6 @@ def main():
         f' --nnodes={num_nodes}'
         f' --node_rank={rank}'
         f' --nproc_per_node={num_gpus}'
-        f' --master_addr={hosts[0]}'
         f' --master_port="12345"'
         f' {main_path}'
         f' --data-dir {data_dir}'
