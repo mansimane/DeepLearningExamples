@@ -62,11 +62,6 @@ def main():
 
     cmd = (
         f'python'
-        f' -m torch.distributed.launch'
-        f' --nnodes={num_nodes}'
-        f' --node_rank={rank}'
-        f' --nproc_per_node={num_gpus}'
-        f' --master_port="12345"'
         f' {main_path}'
         f' --data-dir {data_dir}'
         f' --config-file {config_file}'
